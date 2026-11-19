@@ -39,12 +39,6 @@ canvas{display:block;width:100%;height:100%;outline:none}
 .lbl b{font-weight:500;display:block}
 .lbl span{font-size:11px;color:#5d6b75;direction:rtl;display:block}
 .lbl.out{background:transparent;border-color:transparent;color:#22303a;font-style:italic}
-header{position:absolute;top:16px;left:16px;max-width:min(420px,calc(100% - 32px));background:var(--panel);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
-h1{font-size:19px;font-weight:600;margin:0 0 2px;letter-spacing:-.01em}
-h1 .he{font-weight:400;color:var(--muted);margin-left:6px;font-size:16px}
-header p{margin:6px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}
-header p strong{color:var(--accent);font-weight:500}
 #panel{position:absolute;left:16px;bottom:16px;right:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
   pointer-events:none}
 #panel > *{pointer-events:auto}
@@ -56,17 +50,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .slider{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 8px}
 .slider input{width:110px;accent-color:var(--accent)}
 .hint{font-size:12px;color:var(--muted);margin-left:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
-@media (max-width:640px){ header p.long{display:none} .hint{display:none} }
+@media (max-width:640px){ .hint{display:none} }
 </style>
 </head>
 <body>
 <div id="stage">
   <div id="labels"></div>
-  <header>
-    <h1>Entrance floor <span class="he">קומת כניסה</span></h1>
-    <p>A study model traced from sheet 4 of the architect’s set. Walls, openings and stairs are placed from the drawn dimensions, so expect errors of a few centimetres.</p>
-    <p class="long"><strong>Heights from the elevations (sheets 8–9):</strong> walls to +3.35, roof edge +3.85, window heads +2.20 and +2.80, lower floor −3.30. Turn on the plan underlay to check any wall against the drawing.</p>
-  </header>
   <div id="panel">
     <div class="grp" role="group" aria-label="Camera">
       <button id="v3d" aria-pressed="true">3D view</button>
@@ -75,7 +64,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
     <div class="grp" role="group" aria-label="Display">
       <button id="tcut" aria-pressed="false">Cut walls</button>
       <button id="tplan" aria-pressed="false">Plan underlay</button>
-      <button id="tlbl" aria-pressed="true">Room names</button>
+      <button id="tlbl" aria-pressed="false">Room names</button>
       <button id="tperg" aria-pressed="true">Outdoor</button>
       <button id="troof" aria-pressed="false">Roof</button>
       <button id="tshut" aria-pressed="false">Close all shutters</button>
@@ -313,7 +302,7 @@ function buildWalls(){
       }
       const okey=(hz?'h':'v')+fixed+'_'+op.s;
       for(let i=n0;i<g.children.length;i++) g.children[i].userData.key=okey;   // clicking the window works its shutter
-      if(o.ext && !op.door && !op.noShutter && op.top<=wt){   // roller shutter: box at the head, curtain that rolls down in guide rails
+      if(o.ext && (!op.door||op.leaf==='garage') && !op.noShutter && op.top<=wt){   // roller shutter (and the garage's roller door): box at the head, curtain that rolls down in guide rails
         const mid=(op.s+op.e)/2, sg=(hz?ins(mid,fixed+t/2+4):ins(fixed+t/2+4,mid))?-1:1;
         const c=fixed+sg*(t/2+2.5), top=op.top, run=top-8-op.sill;
         const bx=(z1,z2,mm,d,s=op.s,e=op.e)=>hz?bz(g,s,c-d,e,c+d,z1,z2,mm):bz(g,c-d,s,c+d,e,z1,z2,mm);
@@ -330,7 +319,7 @@ function buildWalls(){
         seg(op.s,op.s+6,0,z2,mat.frame,8); seg(op.e-6,op.e,0,z2,mat.frame,8);
         seg(op.s,op.e,0,Math.min(10,z2),mat.frame,8); seg(op.s,op.e,Math.min(100,z2),Math.min(106,z2),mat.frame,8);
         if(op.top<=wt) seg(op.s,op.e,z2-6,z2,mat.frame,8);
-      } else if(op.leaf) seg(op.s,op.e,0,Math.min(op.top,wt),mat.frame,5);   // exterior doors are black
+      } else if(op.leaf&&op.leaf!=='garage') seg(op.s,op.e,0,Math.min(op.top,wt),mat.frame,5);   // exterior doors are black
       const lt=op.transom||op.top;
       if(op.transom) seg(op.s,op.e,Math.min(op.top,wt),Math.min(op.transom,wt),mat.glass,3);
       seg(op.s,op.e,Math.min(lt,wt),wt,m);
@@ -514,6 +503,17 @@ const plankTex=canvasTex(512,(x,s)=>{ const n=8,w=s/n;   // timber deck boards, 
       x.beginPath(); x.moveTo(0,y); for(let q=0;q<=s;q+=32) x.lineTo(q,y+Math.sin(q/50+k)*1.2); x.stroke(); }
     x.fillStyle='rgba(40,25,12,.75)'; x.fillRect(0,i*w,s,2); } });
 const timber=TM(0xffffff,plankTex,1.12,{roughness:.7,bumpScale:.01});
+// light oak plank floors in the bedrooms, hall, corridor and study (owner)
+const oakTex=canvasTex(1024,(x,s)=>{ const n=8,w=s/n;   // 20 cm boards, staggered end joints
+  for(let i=0;i<n;i++){ const off=rnd(0,s);
+    for(let k=-1;k<2;k++){ const x0=off+k*s*.6; x.fillStyle=`hsl(${rnd(30,36)},${rnd(38,50)}%,${rnd(60,70)}%)`; x.fillRect(x0,i*w,s*.6,w);
+      x.fillStyle=`hsl(${rnd(30,36)},${rnd(38,50)}%,${rnd(60,70)}%)`; x.fillRect(x0-s,i*w,s*.6,w); }
+    for(let k=0;k<60;k++){ const y=i*w+rnd(2,w-2); x.strokeStyle=`rgba(${Math.random()<.5?'120,80,40':'250,225,190'},${rnd(.06,.16)})`; x.lineWidth=rnd(.6,1.6);
+      x.beginPath(); x.moveTo(0,y); for(let q=0;q<=s;q+=40) x.lineTo(q,y+Math.sin(q/70+k)*1.5); x.stroke(); }
+    x.fillStyle='rgba(70,45,20,.55)'; x.fillRect(0,i*w,s,2); x.fillRect(off%s,i*w,2,w); x.fillRect((off+s*.6)%s,i*w,2,w); } });
+const oak=TM(0xffffff,oakTex,1.6,{roughness:.45,bumpScale:.004,envMapIntensity:.9});
+[[777,0,1087,303],[860,352,1201,505],[992,303,1201,352],[1008,505,1379,835],[860,505,1008,1000],[722,763,860,1040],[806,1000,1314,1390]]
+  .forEach(r=>box(F,...r,0,0.5,oak));
 // front boundary wall: concrete, stone coping, light railing; pillars at the gates (+1.05)
 const fw=(a,b)=>{ box(O,a,-720,b,-698,-45,35,mat.ext); box(O,a-1,-722,b+1,-696,35,40,stoneCap); barRail(a,-709,b,-709,40,65); };
 fw(-138,516); fw(766,955);
@@ -610,6 +610,103 @@ function tree(x,y,z,r,h){
 tree(1569,1466,LOW,240,620); tree(1440,1720,LOW,170,460);
 
 
+// ---- Vehicles in the garage: 2016 Toyota Corolla (white) and 2024 KTM 790 Adventure ----
+const V=new THREE.Group(); F.add(V);
+const tubeBetween=(g,a,b,r,m,seg=10)=>{ const A=new THREE.Vector3(...a), B=new THREE.Vector3(...b), d=B.clone().sub(A);
+  const c=new THREE.Mesh(new THREE.CylinderGeometry(r,r,d.length(),seg),m); c.position.copy(A).add(B).multiplyScalar(.5);
+  c.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()); c.castShadow=true; g.add(c); return c; };
+const part=(g,geo,m,x,y,z)=>{ const p=new THREE.Mesh(geo,m); p.position.set(x,y,z); p.castShadow=p.receiveShadow=true; g.add(p); return p; };
+const rubber=M(0x161718,{roughness:.92}), blackTrim=M(0x0d0e10,{roughness:.45,metalness:.2}), chrome=M(0xd8dde2,{roughness:.12,metalness:1});
+// --- Corolla (local metres: x = length from the front bumper, y = up, z = width) ---
+function corolla(){
+  const g=new THREE.Group();
+  const paint=new THREE.MeshPhysicalMaterial({color:new THREE.Color(0xf3f3f1).convertSRGBToLinear(),roughness:.3,metalness:0,clearcoat:1,clearcoatRoughness:.06,envMapIntensity:ENV*1.3});
+  const glass=M(0x0c1014,{roughness:.04,metalness:.4,envMapIntensity:2.2});
+  const ext=(pts,depth,m,bev=.05,arches)=>{ const sh=new THREE.Shape(); sh.moveTo(...pts[0]);
+    for(const p of pts.slice(1)) if(p.arc) sh.absarc(p.arc[0],p.arc[1],p.arc[2],p.arc[3],p.arc[4],false); else sh.lineTo(...p);
+    const geo=new THREE.ExtrudeGeometry(sh,{depth,bevelEnabled:true,bevelThickness:bev,bevelSize:bev,bevelSegments:4,curveSegments:18});
+    geo.translate(0,0,-depth/2); const mm=new THREE.Mesh(geo,m); mm.castShadow=mm.receiveShadow=true; g.add(mm); return mm; };
+  const a1=0.95,a2=3.65,ar=.37,ay=.31,an=Math.asin((.24-ay)/ar);
+  // lower body: bumpers, hood, beltline, trunk, with wheel arches cut into the sill line
+  ext([[.08,.24],[.02,.38],[0,.55],[.05,.66],[.32,.76],[.85,.86],[1.4,.93],[2.6,.97],[3.95,1.02],[4.45,1.0],[4.6,.92],[4.63,.7],[4.58,.4],[4.5,.24],
+       [a2+ar*Math.cos(an),.24],{arc:[a2,ay,ar,an,Math.PI-an]},[a1+ar*Math.cos(an),.24],{arc:[a1,ay,ar,an,Math.PI-an]},[.08,.24]],1.62,paint);
+  // glasshouse (dark glass) and the white roof panel on top of it
+  ext([[1.42,.93],[2.15,1.39],[2.38,1.445],[3.15,1.445],[3.42,1.38],[4.02,1.02],[1.42,.97]],1.36,glass,.04);
+  ext([[2.25,1.43],[2.4,1.475],[3.12,1.475],[3.3,1.43]],1.28,paint,.03);
+  // B-pillar trim, grille, headlights, fog lamps, tail lights, plates, mirrors
+  part(g,new THREE.BoxGeometry(.08,.42,1.38),blackTrim,2.72,1.2,0);
+  part(g,new THREE.BoxGeometry(.05,.2,1.0),blackTrim,.0,.47,0); part(g,new THREE.BoxGeometry(.04,.025,1.05),chrome,.03,.6,0);
+  for(const sz of [-1,1]){
+    const hl=part(g,new THREE.BoxGeometry(.32,.08,.36),M(0x1b1f24,{roughness:.1,metalness:.6,envMapIntensity:2}),.17,.67,sz*.6); hl.rotation.y=sz*.35;
+    part(g,new THREE.BoxGeometry(.2,.012,.3),M(0xffffff,{emissive:0xdfe8ff,emissiveIntensity:.6}),.16,.645,sz*.6);
+    part(g,new THREE.BoxGeometry(.04,.07,.16),blackTrim,.04,.33,sz*.62);
+    part(g,new THREE.BoxGeometry(.09,.1,.36),M(0x7a0b10,{roughness:.15,metalness:.2}),4.6,.88,sz*.6);
+    const mr=part(g,new THREE.BoxGeometry(.2,.11,.09),paint,1.62,1.02,sz*.9); mr.rotation.y=sz*.2;
+    part(g,new THREE.BoxGeometry(.06,.05,.12),blackTrim,1.6,.97,sz*.83);
+  }
+  const plate=M(0xf7f7f7,{roughness:.4}); part(g,new THREE.BoxGeometry(.015,.11,.52),plate,-.01,.4,0); part(g,new THREE.BoxGeometry(.015,.11,.52),plate,4.64,.6,0);
+  // 16" dark alloy wheels: tyre, rim, 5 twin spokes
+  const rim=M(0x3a3e43,{roughness:.35,metalness:.8});
+  for(const ax of [a1,a2]) for(const sz of [-1,1]){
+    const w=new THREE.Group(); w.position.set(ax,.315,sz*.765); g.add(w);
+    const ty=part(w,new THREE.CylinderGeometry(.315,.315,.2,32),rubber,0,0,0); ty.rotation.x=Math.PI/2;
+    const rr=part(w,new THREE.CylinderGeometry(.205,.205,.205,32),rim,0,0,0); rr.rotation.x=Math.PI/2;
+    const hub=part(w,new THREE.CylinderGeometry(.06,.06,.215,16),rim,0,0,0); hub.rotation.x=Math.PI/2;
+    for(let k=0;k<10;k++){ const a=k/10*Math.PI*2+(k%2?.12:0); const sp=part(w,new THREE.BoxGeometry(.03,.17,.02),rim,Math.cos(a)*.11,Math.sin(a)*.11,sz*.105); sp.rotation.z=a-Math.PI/2; }
+    part(w,new THREE.CylinderGeometry(.19,.19,.01,24),M(0x1a1c1f,{roughness:.6}),0,0,sz*.09).rotation.x=Math.PI/2;
+  }
+  return g;
+}
+const car=corolla(); car.rotation.y=-Math.PI/2; car.position.set(11.6,0,-6.55); V.add(car);   // nose toward the garage door
+// --- KTM 790 Adventure (local metres: x = length, front wheel at -x, y = up, z = width) ---
+function ktm(){
+  const g=new THREE.Group();
+  const orange=new THREE.MeshPhysicalMaterial({color:new THREE.Color(0xff6a00).convertSRGBToLinear(),roughness:.35,clearcoat:1,clearcoatRoughness:.1,envMapIntensity:ENV*1.3});
+  const graphite=M(0x2b2e32,{roughness:.5,metalness:.2}), frameBlk=M(0x15171a,{roughness:.4,metalness:.4}), alu=M(0xb9bec4,{roughness:.25,metalness:.9});
+  const prof=(pts,w,m,bev=.02)=>{ const sh=new THREE.Shape(pts.map(p=>new THREE.Vector2(...p)));
+    const geo=new THREE.ExtrudeGeometry(sh,{depth:w,bevelEnabled:true,bevelThickness:bev,bevelSize:bev,bevelSegments:3}); geo.translate(0,0,-w/2);
+    const mm=new THREE.Mesh(geo,m); mm.castShadow=mm.receiveShadow=true; g.add(mm); return mm; };
+  const fx=-.755, rx=.755, fr=.37, rr=.345;
+  // spoked wheels: 21" front, 18" rear, knobby tyres
+  for(const [x,R,t] of [[fx,fr,.055],[rx,rr,.07]]){
+    const w=new THREE.Group(); w.position.set(x,R,0); g.add(w);
+    part(w,new THREE.TorusGeometry(R-t,t,12,40),rubber,0,0,0);
+    part(w,new THREE.TorusGeometry(R-t*2-.012,.012,6,40),alu,0,0,0);
+    part(w,new THREE.CylinderGeometry(.05,.05,.12,16),alu,0,0,0).rotation.x=Math.PI/2;
+    for(let k=0;k<32;k++){ const a=k/32*Math.PI*2, z=(k%2?.05:-.05), L=R-t*2-.02;
+      tubeBetween(w,[0,0,z],[Math.cos(a)*L,Math.sin(a)*L,z*.25],.0025,alu,4); }
+    for(let k=0;k<44;k++){ const a=k/44*Math.PI*2; const kb=part(w,new THREE.BoxGeometry(.035,.025,t*2.1),rubber,Math.cos(a)*R,Math.sin(a)*R,0); kb.rotation.z=a; }
+  }
+  // front fork (WP, black tubes with orange caps), front mudguard
+  for(const z of [-.1,.1]){ tubeBetween(g,[fx,fr,z],[-.39,1.12,z],.024,frameBlk); tubeBetween(g,[-.42,1.03,z],[-.385,1.15,z],.028,orange); }
+  prof([[-1.02,.62],[-.98,.72],[-.75,.79],[-.55,.74],[-.6,.66],[-.78,.71],[-.96,.62]],.13,orange,.015);
+  // engine (LC8c parallel twin), skid plate, frame, swingarm, shock
+  part(g,new THREE.BoxGeometry(.48,.36,.36),graphite,-.06,.47,0);
+  part(g,new THREE.BoxGeometry(.24,.2,.3),graphite,-.18,.7,0);
+  prof([[-.38,.26],[.18,.24],[.2,.32],[-.36,.36]],.32,alu,.01);
+  for(const z of [-.13,.13]){ tubeBetween(g,[-.38,1.08,z],[.1,.72,z],.02,frameBlk); tubeBetween(g,[.15,.48,z],[rx,rr,z*.8],.03,frameBlk); }
+  tubeBetween(g,[.1,.5,.06],[.22,.88,.06],.035,orange);
+  // tank shrouds (graphite) with orange side panels, seat, tail, number-plate holder
+  prof([[-.46,1.06],[-.12,1.06],[.1,.9],[.12,.66],[-.12,.58],[-.42,.66],[-.5,.85]],.44,graphite,.04);
+  for(const z of [-.255,.255]){ const sp=prof([[-.42,.98],[-.1,.98],[.06,.82],[-.1,.66],[-.38,.72]],.02,orange,.01); sp.position.z=z; }
+  prof([[.02,.9],[.1,.94],[.62,.96],[.72,.93],[.62,.88],[.1,.84]],.3,M(0x1a1a1b,{roughness:.8}),.03);
+  prof([[.6,.9],[.95,.99],[1.0,.95],[.72,.86]],.18,frameBlk,.02);
+  tubeBetween(g,[.92,.94,0],[1.02,.62,0],.012,frameBlk); part(g,new THREE.BoxGeometry(.012,.12,.18),M(0xf2f2f2),1.03,.6,0);
+  part(g,new THREE.BoxGeometry(.03,.03,.08),M(0x9a0a0a,{emissive:0x400000}),.99,.95,0);
+  // silencer on the right, headlight nose, screen, bars with hand guards and mirrors
+  tubeBetween(g,[.18,.48,.2],[.42,.6,.22],.035,alu); tubeBetween(g,[.4,.58,.22],[.8,.72,.2],.075,alu,16);
+  prof([[-.62,1.0],[-.5,1.0],[-.38,1.2],[-.48,1.24],[-.62,1.1]],.26,graphite,.03);
+  part(g,new THREE.BoxGeometry(.03,.08,.2),M(0xe8f0ff,{emissive:0xc8d8ff,emissiveIntensity:.5}),-.63,1.06,0);
+  const scr=part(g,new THREE.BoxGeometry(.01,.36,.32),M(0xaab4bc,{transparent:true,opacity:.35,roughness:.05}),-.44,1.38,0); scr.rotation.z=-.35;
+  tubeBetween(g,[-.3,1.2,-.42],[-.3,1.2,.42],.014,frameBlk);
+  for(const z of [-1,1]){ part(g,new THREE.BoxGeometry(.16,.06,.06),M(0x111111),-.38,1.2,z*.4).rotation.y=z*.3;
+    tubeBetween(g,[-.3,1.22,z*.3],[-.36,1.42,z*.36],.007,frameBlk); part(g,new THREE.BoxGeometry(.03,.07,.11),M(0x111111),-.36,1.44,z*.37); }
+  tubeBetween(g,[-.05,.3,-.2],[.05,0,-.42],.012,frameBlk);   // side stand (left)
+  return g;
+}
+const bike=new THREE.Group(), bk=ktm(); bk.rotation.x=-.09; bike.add(bk);   // leaning slightly onto its side stand
+bike.rotation.y=-Math.PI/2; bike.position.set(14.45,0,-3.9); V.add(bike);
+
 // ---- Plan underlay ----
 const tex=new THREE.TextureLoader().load(PLAN_IMG);
 tex.anisotropy=MAXA; tex.encoding=THREE.sRGBEncoding;
@@ -635,7 +732,7 @@ const labels=rooms.map(([en,he,x,y,out,z])=>{
   d.innerHTML='<b>'+en+'</b>'+(he?'<span>'+he+'</span>':''); lblBox.appendChild(d);
   return {d,v:new THREE.Vector3(x/100,z!==undefined?z:out?0.05:1.0,y/100),out};
 });
-let showLbl=true;
+let showLbl=false;
 const tmp=new THREE.Vector3();
 function placeLabels(){
   const w=renderer.domElement.clientWidth,h=renderer.domElement.clientHeight;

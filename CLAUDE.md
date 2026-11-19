@@ -48,13 +48,18 @@ Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root)
 - Stair railings: black steel with expanded-metal mesh, sloped to follow each flight; no wall between flights.
 - Stair window: full height, down to the terrace floor. Interior window from the stairwell to the study.
 - Stone cladding (natural stone from the photo): the wall around the front door (incl. the guest WC window), the garage wall with the side door (below the long window only), and the stair side of the study wall. The kitchen-window front wall is plain light-grey plaster, not stone.
-- Garage: closed, walls to +2.45, no roof, one black car door on the front, black side door with a long window strip above it running the length of the wall.
+- Garage: closed, walls to +2.45, no roof, one black car door on the front, black side door with a long window strip above it running the length of the wall. The car door is a roller door: it works like the window shutters (click it, or use "Close all shutters").
+- In the garage: a white 2016 Toyota Corolla and an orange 2024 KTM 790 Adventure (built from primitives in `corolla()` / `ktm()`).
+- Light oak plank floors in both bedrooms, the main bedroom, the hall, the corridor and the study; porcelain tiles elsewhere.
+- A paved trail crosses the planting strip from the entrance path to the garage side door – the two boxes there on sheet א1 are not cabinets.
+- No info panel over the 3D view.
 - All interior walls white. Exterior plaster light grey. Black window frames, black outside doors, aluminium + glass utility door to the outside. Black roller shutters on all exterior windows.
 - Kitchen: green fronts, white marble-look worktop, U-shape with oak-veneer peninsula back, waterfall end, wine fridge; tall wall = open oak niche, oven tower, 2 × 60 cm fridges, tall cabinet; tall units to 2.70, drywall above to the ceiling, flush return wall closing the side.
 - Roof: 50 cm fascia band, 80 cm overhang at the front, open slatted roof (4 beams) over the entrance passage.
 - No gap between the utility room and bedroom 2; utility door opens from the hall.
 - No window from the front bedroom onto the entry passage (its wall at x = 777 is blank).
 - The roof is hidden by default; the Roof button turns it on.
+- Room names are hidden by default; the Room names button shows them.
 
 ## Open questions
 - Where the garage's second regular door is.
