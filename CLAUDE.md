@@ -31,7 +31,7 @@ Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root)
 - Stairs go **down** to the lower floor (U-shape, 19 risers, 3.30 m), first flight along the study wall. Oak treads.
 - Stair railings: black steel with expanded-metal mesh, sloped to follow each flight; no wall between flights.
 - Stair window: full height, down to the terrace floor. Interior window from the stairwell to the study.
-- Stone cladding (natural stone from the photo): the wall around the front door (incl. the guest WC window), the garage wall with the side door (below the long window only), the stair side of the study wall, and the kitchen-window front wall.
+- Stone cladding (natural stone from the photo): the wall around the front door (incl. the guest WC window), the garage wall with the side door (below the long window only), and the stair side of the study wall. The kitchen-window front wall is plain light-grey plaster, not stone.
 - Garage: closed, walls to +2.45, no roof, one black car door on the front, black side door with a long window strip above it running the length of the wall.
 - All interior walls white. Exterior plaster light grey. Black window frames, black outside doors, aluminium + glass utility door to the outside. Black roller shutters on all exterior windows.
 - Kitchen: green fronts, white marble-look worktop, U-shape with oak-veneer peninsula back, waterfall end, wine fridge; tall wall = open oak niche, oven tower, 2 × 60 cm fridges, tall cabinet; tall units to 2.70, drywall above to the ceiling, flush return wall closing the side.
@@ -41,5 +41,4 @@ Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root)
 ## Open questions
 - Where the garage's second regular door is.
 - Where the kitchen cooktop is (not visible in the kitchen renders).
-- The front photo suggests the kitchen-window wall may be plain plaster, not stone – confirm with the owner.
 - Lower floor and sloping site are not modelled yet (needs the lower-floor plan).

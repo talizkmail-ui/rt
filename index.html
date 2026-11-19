@@ -141,7 +141,7 @@ const G=(s,e,sill=90,top=210)=>({s,e,sill,top});
 const ext=(...a)=>W.push([...a.slice(0,6),{ext:true,...(a[6]||{})}]);
 const int=(...a)=>W.push([...a.slice(0,6),{ext:false,...(a[6]||{})}]);
 // exterior
-ext(0,12,515,12,25,[G(110,330,110,220)],{stone:'-z'});   // kitchen, stone-clad
+ext(0,12,515,12,25,[G(110,330,110,220)]);   // kitchen, plain plaster (owner: no stone)
 ext(12,0,12,1211,25,[G(360,660,0,280)]);                  // glazing to deck
 ext(0,1198,534,1198,25,[G(62,462,0,280)]);                 // living south sliding door
 ext(521,1030,521,1211,25,[]);
