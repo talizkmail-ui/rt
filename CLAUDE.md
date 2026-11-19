@@ -49,7 +49,11 @@ Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root)
 - Stair window: full height, down to the terrace floor. Interior window from the stairwell to the study.
 - Stone cladding (natural stone from the photo): the wall around the front door (incl. the guest WC window), the garage wall with the side door (below the long window only), and the stair side of the study wall. The kitchen-window front wall is plain light-grey plaster, not stone.
 - Garage: closed, walls to +2.45, no roof, one black car door on the front, black side door with a long window strip above it running the length of the wall. The car door is a roller door: it works like the window shutters (click it, or use "Close all shutters").
-- In the garage: a white 2016 Toyota Corolla and an orange 2024 KTM 790 Adventure (built from primitives in `corolla()` / `ktm()`).
+- In the garage: a white Toyota Corolla (E180, Europe) and a KTM 790 Adventure. They are real downloaded models in `models/` (both CC BY 4.0 – keep the credit line in `.hint`):
+  - `models/corolla-e180.glb` – "2014 Toyota Corolla E180 EU (with interior)" by Armored Wave (Sketchfab). Its `main_paint` materials are recoloured white in code.
+  - `models/ktm-790-adventure.glb` – "KTM 790 Adv R RALLY (2020)" by espero7757 (Sketchfab), a 3D scan; its baked ground disc is cut away and its long axis found from the vertices (`opt.flat`, `opt.axis`).
+  - `loadVehicle()` loads them after the page is up, scales them to the real length, turns them nose-first to the garage door and sets them on the floor using exact vertex bounds (r128's `Box3.setFromObject` over-sizes rotated parts). The hand-built `corolla()` / `ktm()` stay as stand-ins until (or if not) the files load.
+  - Textures were re-encoded to JPEG to shrink the Corolla from 18.5 MB to 6.6 MB; the KTM is 8.9 MB, mostly geometry.
 - Light oak plank floors in both bedrooms, the main bedroom, the hall, the corridor and the study; porcelain tiles elsewhere.
 - A paved trail crosses the planting strip from the entrance path to the garage side door – the two boxes there on sheet א1 are not cabinets.
 - No info panel over the 3D view.
