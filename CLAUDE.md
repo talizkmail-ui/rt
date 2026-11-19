@@ -37,6 +37,8 @@ Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root)
 - Kitchen: green fronts, white marble-look worktop, U-shape with oak-veneer peninsula back, waterfall end, wine fridge; tall wall = open oak niche, oven tower, 2 × 60 cm fridges, tall cabinet; tall units to 2.70, drywall above to the ceiling, flush return wall closing the side.
 - Roof: 50 cm fascia band, 80 cm overhang at the front, open slatted roof (4 beams) over the entrance passage.
 - No gap between the utility room and bedroom 2; utility door opens from the hall.
+- No window from the front bedroom onto the entry passage (its wall at x = 777 is blank).
+- The roof is hidden by default; the Roof button turns it on.
 
 ## Open questions
 - Where the garage's second regular door is.
