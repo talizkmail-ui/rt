@@ -121,7 +121,7 @@ const hemi=new THREE.HemisphereLight(0xdfe9f3,0x6f6a58,0.15); scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff0db,2.2);
 sun.position.copy(SUN_DIR).multiplyScalar(30).add(new THREE.Vector3(CX,0,CZ)); sun.target.position.set(CX,0,CZ);
 sun.castShadow=true; sun.shadow.mapSize.set(4096,4096);
-Object.assign(sun.shadow.camera,{left:-14,right:14,top:14,bottom:-14,near:1,far:70});
+Object.assign(sun.shadow.camera,{left:-17,right:17,top:17,bottom:-17,near:1,far:80});
 sun.shadow.bias=-0.0004; sun.shadow.normalBias=0.02;
 scene.add(sun,sun.target);
 const sky=new THREE.Sky(); sky.scale.setScalar(500);
@@ -287,14 +287,15 @@ function buildWalls(){
   for(const [x1,y1,x2,y2,t,ops,o] of W){
     const hz=(y1===y2), a=Math.min(hz?x1:y1,hz?x2:y2), b=Math.max(hz?x1:y1,hz?x2:y2);
     const fixed=hz?y1:x1, wt=Math.min(o.h||H,cap), m=o.ext?mat.ext:mat.int;
+    const Z=o.z0||0, ins=o.ins||inside, bz=(g,x1,y1,x2,y2,z1,z2,mm)=>box(g,x1,y1,x2,y2,z1+Z,z2+Z,mm);   // z0: base level (lower floor = -330)
     const seg=(s,e,z1,z2,mm,th=t)=>{ if(z2<=z1) return;
       if(o.stoneTop&&mm===m&&z1<o.stoneTop&&z2>o.stoneTop){ seg(s,e,z1,o.stoneTop,mm,th); seg(s,e,o.stoneTop,z2,mm,th); return; }
-      const mesh=hz?box(g,s,fixed-th/2,e,fixed+th/2,z1,z2,mm):box(g,fixed-th/2,s,fixed+th/2,e,z1,z2,mm);
+      const mesh=hz?bz(g,s,fixed-th/2,e,fixed+th/2,z1,z2,mm):bz(g,fixed-th/2,s,fixed+th/2,e,z1,z2,mm);
       if(!mesh||mm!==m) return;
       const arr=Array(6).fill(m);
       if(o.ext){ const mid=(s+e)/2, off=th/2+4;
-        if(hz){ arr[4]=inside(mid,fixed+off)?mat.int:mat.ext; arr[5]=inside(mid,fixed-off)?mat.int:mat.ext; }
-        else  { arr[0]=inside(fixed+off,mid)?mat.int:mat.ext; arr[1]=inside(fixed-off,mid)?mat.int:mat.ext; } }
+        if(hz){ arr[4]=ins(mid,fixed+off)?mat.int:mat.ext; arr[5]=ins(mid,fixed-off)?mat.int:mat.ext; }
+        else  { arr[0]=ins(fixed+off,mid)?mat.int:mat.ext; arr[1]=ins(fixed-off,mid)?mat.int:mat.ext; } }
       if(o.stone&&!(o.stoneTop&&z1>=o.stoneTop)) arr[{'+x':0,'-x':1,'+z':4,'-z':5}[o.stone]]=stoneFace(e-s,z2-z1);
       mesh.material=arr; };
     let cur=a;
@@ -313,15 +314,15 @@ function buildWalls(){
       const okey=(hz?'h':'v')+fixed+'_'+op.s;
       for(let i=n0;i<g.children.length;i++) g.children[i].userData.key=okey;   // clicking the window works its shutter
       if(o.ext && !op.door && !op.noShutter && op.top<=wt){   // roller shutter: box at the head, curtain that rolls down in guide rails
-        const mid=(op.s+op.e)/2, sg=(hz?inside(mid,fixed+t/2+4):inside(fixed+t/2+4,mid))?-1:1;
+        const mid=(op.s+op.e)/2, sg=(hz?ins(mid,fixed+t/2+4):ins(fixed+t/2+4,mid))?-1:1;
         const c=fixed+sg*(t/2+2.5), top=op.top, run=top-8-op.sill;
-        const bx=(z1,z2,mm,d,s=op.s,e=op.e)=>hz?box(g,s,c-d,e,c+d,z1,z2,mm):box(g,c-d,s,c+d,e,z1,z2,mm);
+        const bx=(z1,z2,mm,d,s=op.s,e=op.e)=>hz?bz(g,s,c-d,e,c+d,z1,z2,mm):bz(g,c-d,s,c+d,e,z1,z2,mm);
         bx(top-8,top,mat.frame,3.5).userData.key=okey;                       // roller box
         bx(op.sill,top-8,mat.frame,2.5,op.s,op.s+3).userData.key=okey;       // guide rails
         bx(op.sill,top-8,mat.frame,2.5,op.e-3,op.e).userData.key=okey;
         const sm=shutterMat(run), cur=bx(op.sill,top-8,sm,1.2,op.s+1,op.e-1); cur.userData.key=okey;
         const st=shutState[okey]||(shutState[okey]={f:0,target:0});
-        const sh={mesh:cur,tex:sm.map,top:top-8,run,st}; shutters.push(sh); applyShut(sh);
+        const sh={mesh:cur,tex:sm.map,top:top-8+Z,run,st}; shutters.push(sh); applyShut(sh);
       }
       if(op.leaf==='glassdoor'){   // aluminium door with glass
         const z2=Math.min(op.top,wt);
@@ -447,16 +448,50 @@ slopeRail(627,955,B+10*R,712,B+R,95);    // lower flight, along the living room
 
 // ---- Outdoor ----
 const O=groups.outdoor;
-const gs=new THREE.Shape();
-const GR=260;   // lawn out to the horizon, fading into the haze
-gs.moveTo(CX-GR,-(CZ+GR)); gs.lineTo(CX+GR,-(CZ+GR)); gs.lineTo(CX+GR,-(CZ-GR)); gs.lineTo(CX-GR,-(CZ-GR)); gs.lineTo(CX-GR,-(CZ+GR));
-const hole=new THREE.Path(); hole.moveTo(5.14,-10.5); hole.lineTo(5.14,-7.0); hole.lineTo(7.27,-7.0); hole.lineTo(7.27,-10.5); hole.lineTo(5.14,-10.5);
-gs.holes.push(hole);
-const gnd=new THREE.Mesh(new THREE.ShapeGeometry(gs),mat.ground);
-gnd.rotation.x=-Math.PI/2; gnd.position.set(0,-0.16,0); gnd.receiveShadow=true; scene.add(gnd);
-box(O,0,1211,821,1546,-15,-4,mat.deck);       // south terrace
-box(O,521,1050,821,1211,-15,-4,mat.deck);     // terrace outside the stair window
-box(O,-250,0,0,1546,-15,-4,mat.deck);         // deck wrapping the living room
+// ---- Site (sheet א1 entrance-level site plan, sheets א3 / א8–א9 for the lower level) ----
+// The plot falls about 3.3 m from the street to the back: the front half is at the entrance level,
+// the back and the north-east side are at the lower floor (-330), where the lower floor opens onto the garden.
+const T=new THREE.Group(); scene.add(T);   // terrain and retaining walls: always shown
+const PL={x1:-269,x2:1686,y1:-720,y2:1846};   // plot boundary (sheet א1)
+const LOW=-331;                               // lower garden level (lower floor = -330)
+// ground outside the plot follows the same fall: street -45, entrance level -15, slope down to the lower level
+const zOut=Y=>Y<PL.y1?-45:Y<=556?-15:Y>=1100?-330:-15-(Y-556)/544*315;
+// inside the plot: entrance-level parts (A) and lower parts
+const inLvl=(x,y)=>(y<0||(x<1391&&y<556)||(x>=1391&&x<1574&&y<430)||(x>=1574&&y<229))?-15:LOW;
+{ const xs=new Set(), ys=new Set();
+  for(let v=-26000;v<=26000;v+=2000){xs.add(v);ys.add(v);}
+  for(let v=-1200;v<=2800;v+=100){xs.add(v);ys.add(v);}
+  for(let v=556;v<=1100;v+=25) ys.add(v);
+  [PL.x1,PL.x2].forEach(v=>xs.add(v)); [PL.y1-1,PL.y1,PL.y2,556,1100].forEach(v=>ys.add(v));
+  const X=[...xs].sort((a,b)=>a-b), Y=[...ys].sort((a,b)=>a-b), pos=[], idx=[], NY=Y.length;
+  for(const x of X) for(const y of Y) pos.push(x/100,zOut(y)/100-0.01,y/100);
+  for(let i=0;i<X.length-1;i++) for(let j=0;j<NY-1;j++){
+    if(X[i]>=PL.x1&&X[i+1]<=PL.x2&&Y[j]>=PL.y1&&Y[j+1]<=PL.y2) continue;   // the plot itself is built below
+    const a=i*NY+j,b=a+1,c=a+NY,d=c+1; idx.push(a,b,c,c,b,d); }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setIndex(idx); g.computeVertexNormals();
+  const m=new THREE.Mesh(g,mat.ground); m.receiveShadow=true; T.add(m);
+}
+// lawn inside the plot
+[[-269,-720,1686,0],[-269,0,1391,556],[1391,0,1574,430],[1574,0,1686,229]].forEach(r=>box(T,...r,-16,-15,mat.ground));
+[[-269,556,1686,1846],[1391,430,1574,556],[1574,229,1686,556]].forEach(r=>box(T,...r,LOW-1,LOW,mat.ground));
+const conc=TM(0xcfcac2,concreteTex,2.5,{roughness:.9,bumpScale:.02});
+// retaining walls where the entrance level meets the lower garden
+box(T,-269,546,0,566,LOW,-15,conc);            // under the deck, closing the lower patio to the north
+box(T,1391,420,1574,440,LOW,5,conc);           // edge of the laundry yard
+box(T,1564,229,1584,430,LOW,5,conc);           // beside the top flight of the outdoor steps
+// boundary walls where the plot and the neighbours' ground differ; on the slope the top follows the ground
+function slopeWall(x,ya,yb,z1,zA,zB){   // wall along y at x, top rising/falling linearly from zA (at ya) to zB (at yb)
+  const zt=Math.max(zA,zB), mesh=box(T,x-10,ya,x+10,yb,z1,zt,conc), p=mesh.geometry.attributes.position, cy=(z1+zt)/200;
+  for(let i=0;i<p.count;i++) if(p.getY(i)>0) p.setY(i,(p.getZ(i)>0?zB:zA)/100-cy);
+  mesh.geometry.computeVertexNormals();
+}
+for(const x of [PL.x1,PL.x2]) slopeWall(x,556,1100,LOW,0,-315);
+box(T,PL.x2-10,229,PL.x2+10,556,LOW,0,conc);   // beside the outdoor steps
+// the south terrace and the deck along the living room are balconies over the lower patio
+box(O,0,1211,821,1546,-32,-4,mat.deck);       // south terrace
+box(O,521,1040,821,1211,-32,-4,mat.deck);     // terrace outside the stair window
+box(O,-250,0,0,1546,-32,-4,mat.deck);         // deck wrapping the living room
+for(const [x,y] of [[-238,1534],[-238,1000],[380,1534],[812,1534]]) box(O,x-6,y-6,x+6,y+6,LOW,-32,railSteel);   // 12" steel columns
 // vertical-bar railing around the deck edge
 function barRail(x1,y1,x2,y2,z0=-4,h=110){
   const hz=(y1===y2), a=Math.min(hz?x1:y1,hz?x2:y2), b=Math.max(hz?x1:y1,hz?x2:y2), f=hz?y1:x1;
@@ -469,7 +504,111 @@ barRail(-247,0,-247,1543); barRail(-250,1543,821,1543); barRail(-250,3,0,3);
 box(O,515,0,764,310,-15,-3,mat.pave);         // covered entry
 // closed garage north of the bedroom wing
 box(F,955,-720,1570,-25,-15,0,mat.pave);
-box(O,1000,-950,1525,-720,-15,-3,mat.pave);   // driveway apron in front of the garage door
+box(O,1000,-950,1525,-720,-45,-3,mat.pave);   // driveway apron in front of the garage door
+
+// ---- Entrance-level site (sheet א1) ----
+const stoneCap=M(0xd9d0c1,{roughness:.8});
+const plankTex=canvasTex(512,(x,s)=>{ const n=8,w=s/n;   // timber deck boards, 14 cm wide
+  for(let i=0;i<n;i++){ x.fillStyle=`hsl(${rnd(26,32)},${rnd(38,48)}%,${rnd(42,52)}%)`; x.fillRect(0,i*w,s,w);
+    for(let k=0;k<40;k++){ const y=i*w+rnd(2,w-2); x.strokeStyle=`rgba(${Math.random()<.5?'90,55,25':'230,190,140'},${rnd(.08,.2)})`; x.lineWidth=rnd(.5,1.5);
+      x.beginPath(); x.moveTo(0,y); for(let q=0;q<=s;q+=32) x.lineTo(q,y+Math.sin(q/50+k)*1.2); x.stroke(); }
+    x.fillStyle='rgba(40,25,12,.75)'; x.fillRect(0,i*w,s,2); } });
+const timber=TM(0xffffff,plankTex,1.12,{roughness:.7,bumpScale:.01});
+// front boundary wall: concrete, stone coping, light railing; pillars at the gates (+1.05)
+const fw=(a,b)=>{ box(O,a,-720,b,-698,-45,35,mat.ext); box(O,a-1,-722,b+1,-696,35,40,stoneCap); barRail(a,-709,b,-709,40,65); };
+fw(-138,516); fw(766,955);
+const pillar=x=>{ box(O,x,-726,x+35,-691,-45,100,mat.ext); box(O,x-2,-728,x+37,-689,100,105,stoneCap); };
+pillar(516); pillar(731); pillar(1570);
+const gate=(a,b)=>barRail(a,-709,b,-709,-12,112);   // black steel gates
+gate(553,729); gate(1607,1686);
+// enclosure at the front-left corner (walls only, as drawn)
+box(O,-269,-720,-138,-700,-45,105,mat.ext); box(O,-158,-700,-138,-430,-15,105,mat.ext); box(O,-269,-450,-158,-430,-15,105,mat.ext);
+// paving: path from the gate to the entrance, side path, laundry yard
+box(O,516,-698,764,0,-15,-2,mat.pave);
+box(O,1570,-698,1686,229,-15,-2,mat.pave);
+box(O,1391,0,1564,420,-15,-2,mat.pave);
+// paved trail from the path across the planting strip to the garage side door (owner: no cabinets here)
+box(O,764,-140,955,-30,-15,-2,mat.pave);
+// laundry screen: black aluminium louvres
+for(let y=121;y<364;y+=9) box(O,1532,y,1540,y+4,-2,180,mat.frame);
+box(O,1530,119,1542,364,180,186,mat.frame);
+// outdoor concrete steps down to the lower garden along the north-east boundary: 19 risers × 27 cm
+const RS=330/19;
+for(let i=1;i<=19;i++) box(O,1584,229+(i-1)*27,1686,229+i*27,LOW,-i*RS,conc);
+box(O,1574,742,1686,1050,LOW-14,LOW+1,mat.pave);   // landing at the bottom
+// railings: sloped bar railing along the open side of the steps, flat ones on the walls above the lower garden
+function slopeBars(x,ya,za,yb,zb,h=100){
+  const zAt=y=>za+(zb-za)*(y-ya)/(yb-ya);
+  beam([x,ya,za+h-2.5],[x,yb,zb+h-2.5],5); beam([x,ya,za+10],[x,yb,zb+10],3);
+  for(let y=ya+6;y<yb-3;y+=11) box(O,x-1,y,x+1,y+2,zAt(y)+11,zAt(y)+h-5,railSteel);
+  const n=Math.max(1,Math.round((yb-ya)/140)); for(let k=0;k<=n;k++){ const y=ya+k*(yb-ya)/n; box(O,x-2.5,y-2.5,x+2.5,y+2.5,zAt(y),zAt(y)+h,railSteel); }
+}
+slopeBars(1587,430,-(430-229)/27*RS,742,LOW+1);
+barRail(1574,229,1574,430,5,100); barRail(1391,430,1564,430,5,100);
+
+// ---- Lower floor exterior (sheet א3; openings from the plan, heights from the elevations) ----
+const LOWER=[[0,556,530,1180],[530,556,920,1040],[920,196,1390,1060],[805,1040,1335,1395]];
+const insideLower=(x,y)=>LOWER.some(r=>x>r[0]&&x<r[2]&&y>r[1]&&y<r[3]);
+const LO={z0:-330,h:330,ins:insideLower};
+ext(12,556,12,1180,25,[{...D(590,680,220),leaf:'black'}],LO);                      // west: door from the bedroom to the patio
+ext(0,1168,530,1168,25,[G(30,295,0,220),G(345,410,100,220)],LO);                  // bedroom sliding door + bathroom window
+ext(518,1040,518,1180,25,[],LO);
+ext(518,1040,817,1040,25,[G(700,790,100,220)],LO);
+ext(817,1040,817,1395,25,[],LO);
+ext(805,1383,1335,1383,25,[G(965,1225,0,220)],LO);                                // family room sliding door to the timber deck
+ext(1323,1048,1323,1395,25,[{...D(1115,1205,220),leaf:'black'}],LO);              // family room side door
+ext(1323,1048,1390,1048,25,[],LO);
+ext(1378,196,1378,1060,25,[G(445,525,80,220),G(655,760,110,215),G(925,1020,100,220)],LO);   // service room, safe room, kitchenette
+LOWER.forEach(r=>box(F,...r,-345,-330,mat.floor));
+// lower garden: patio paving under the balconies, timber deck by the family room, hot tub
+[[-269,566,0,1546],[0,1180,518,1546],[518,1040,821,1546],[1391,440,1574,560]].forEach(r=>box(O,...r,LOW-14,LOW+1,mat.pave));
+box(O,832,1411,1324,1644,LOW-12,-327,timber);
+box(O,-243,790,-75,965,LOW,-240,mat.porc);
+box(O,-233,800,-85,955,-252,-246,M(0x3f97ad,{roughness:.04,metalness:.1,envMapIntensity:1.6}));
+
+// ---- Planting (positions from sheet א1) ----
+// foliage = many small leaf-cluster cards with rounded normals, so crowns read soft and leafy rather than faceted
+const leafTex=canvasTex(256,(x,s)=>{ x.clearRect(0,0,s,s);
+  for(let i=0;i<110;i++){ const px=rnd(28,s-28),py=rnd(28,s-28),a=rnd(0,6.28),l=rnd(10,22);
+    x.save(); x.translate(px,py); x.rotate(a); x.fillStyle=`hsl(${rnd(75,105)},${rnd(32,50)}%,${rnd(30,50)}%)`;
+    x.beginPath(); x.ellipse(0,0,l,l*.42,0,0,6.28); x.fill(); x.restore(); } });
+leafTex.wrapS=leafTex.wrapT=THREE.ClampToEdgeWrapping;
+const leafMat=M(0xffffff,{map:leafTex,alphaTest:.5,side:THREE.DoubleSide,roughness:.85});
+const leafDepth=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:leafTex,alphaTest:.5});
+const bark=M(0x5e4a3a,{roughness:.95});
+function foliage(x,y,z,rx,rz,ry,n,size){   // ellipsoid crown centred at (x,y) height z (cm)
+  const pos=[],nor=[],uv=[],idx=[], C=new THREE.Vector3(x/100,z/100,y/100), v=new THREE.Vector3(), nn=new THREE.Vector3(), u=new THREE.Vector3(), w=new THREE.Vector3();
+  for(let i=0;i<n;i++){
+    do{ v.set(rnd(-1,1),rnd(-1,1),rnd(-1,1)); }while(v.lengthSq()>1);
+    const r=Math.pow(v.length(),.35); v.normalize().multiplyScalar(r);   // push cards toward the surface
+    const c=new THREE.Vector3(v.x*rx/100,v.y*ry/100,v.z*rz/100).add(C);
+    nn.set(v.x/rx,v.y/ry*.8+.25,v.z/rz).normalize();                      // rounded, slightly skyward normals
+    u.set(rnd(-1,1),rnd(-1,1),rnd(-1,1)).normalize(); w.crossVectors(u,nn).normalize(); u.crossVectors(nn,w);
+    const h=size/200*rnd(.75,1.25), b=pos.length/3;
+    for(const [su,sw,tu,tv] of [[-1,-1,0,0],[1,-1,1,0],[1,1,1,1],[-1,1,0,1]]){
+      pos.push(c.x+(u.x*su+w.x*sw)*h,c.y+(u.y*su+w.y*sw)*h,c.z+(u.z*su+w.z*sw)*h); nor.push(nn.x,nn.y,nn.z); uv.push(tu,tv); }
+    idx.push(b,b+1,b+2,b,b+2,b+3);
+  }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3)); g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); g.setIndex(idx);
+  const m=new THREE.Mesh(g,leafMat); m.customDepthMaterial=leafDepth; m.castShadow=m.receiveShadow=true; O.add(m);
+}
+const shrub=(x,y,z,r,h)=>foliage(x,y,z+h*.5,r,r,h*.5,Math.round(r*3.5),30);
+const cover=(x,y,z,r)=>foliage(x,y,z+10,r,r,12,Math.round(r*2.5),24);
+function tree(x,y,z,r,h){
+  const t=new THREE.Mesh(new THREE.CylinderGeometry(.07*r/100,.13*r/100,h*.6/100,10),bark);
+  t.position.set(x/100,(z+h*.3)/100,y/100); t.castShadow=true; O.add(t);
+  for(let k=0;k<4;k++){ const a=k*1.57+rnd(-.4,.4), L=r*.55, br=new THREE.Mesh(new THREE.CylinderGeometry(.025*r/100,.045*r/100,L/100,6),bark);
+    br.position.set((x+Math.cos(a)*L*.35)/100,(z+h*.62)/100,(y+Math.sin(a)*L*.35)/100); br.rotation.set(Math.sin(a)*.9,0,-Math.cos(a)*.9); br.castShadow=true; O.add(br); }
+  foliage(x,y,z+h*.7,r,r,h*.3,Math.round(r*4.5),64);
+}
+[[468,-644],[468,-411],[468,-178]].forEach(([x,y])=>shrub(x,y,-15,42,95));          // front lawn, along the path
+[[470,-530],[470,-290],[470,-60],[860,-560],[860,-370],[860,-200]].forEach(([x,y])=>cover(x,y,-15,55));
+[[129,1695],[248,1695],[434,1695],[755,1695],[870,1770],[1010,1780]].forEach(([x,y])=>shrub(x,y,LOW,55,110));   // south lawn
+[[-180,1600],[-120,1700],[-60,1790],[40,1640]].forEach(([x,y])=>cover(x,y,LOW,70));
+[[1459,619],[1480,760],[1460,1030],[1540,990]].forEach(([x,y])=>shrub(x,y,LOW,55,100));   // north-east garden
+tree(1569,1466,LOW,240,620); tree(1440,1720,LOW,170,460);
+
 
 // ---- Plan underlay ----
 const tex=new THREE.TextureLoader().load(PLAN_IMG);
@@ -487,13 +626,14 @@ const rooms=[
   ['Bedroom','חדר שינה',930,160],['Bathroom','חדר רחצה',1240,130],['Utility','חדר שירות',1290,345],
   ['Corridor','',935,640],['Bedroom','חדר שינה',1190,670],['Study','חדר עבודה',790,900],
   ['Stairs down','מדרגות',620,830],['En-suite','חדר רחצה',1190,915],['Main bedroom','הורים',1065,1200],
-  ['Terrace','מרפסת',400,1390,1],['Garage','חניה',1255,-370],['Deck','מרפסת בטון',-125,600,1]
+  ['Terrace','מרפסת',400,1390,1],['Garage','חניה',1255,-370],['Deck','מרפסת בטון',-125,600,1],
+  ['Front garden','גינה',100,-380,1],['Laundry yard','חצר כביסה',1470,260,1],['Lower patio','חצר תחתונה',-140,1300,1,-3.25],['Lower garden','גינה תחתונה',1500,1250,1,-3.25],['Deck','דק עץ',1080,1530,1,-3.2]
 ];
 const lblBox=document.getElementById('labels');
-const labels=rooms.map(([en,he,x,y,out])=>{
+const labels=rooms.map(([en,he,x,y,out,z])=>{
   const d=document.createElement('div'); d.className='lbl'+(out?' out':'');
   d.innerHTML='<b>'+en+'</b>'+(he?'<span>'+he+'</span>':''); lblBox.appendChild(d);
-  return {d,v:new THREE.Vector3(x/100,out?0.05:1.0,y/100),out};
+  return {d,v:new THREE.Vector3(x/100,z!==undefined?z:out?0.05:1.0,y/100),out};
 });
 let showLbl=true;
 const tmp=new THREE.Vector3();

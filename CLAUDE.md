@@ -1,6 +1,6 @@
 # House 3D model – project notes
 
-Interactive 3D study model of the entrance floor (קומת כניסה) of our house, built with three.js r128.
+Interactive 3D study model of our house – the entrance floor (קומת כניסה) in full, the lower floor's exterior and the site – built with three.js r128.
 Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root).
 
 ## Files
@@ -14,7 +14,10 @@ Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root)
 - Post-processing: `composer` = render → SAO ambient occlusion → gamma. The loop calls `composer.render()`, not `renderer.render()`. SAO's depth-texture mode is broken in r128, so keep `SAOPass(scene,camera,false,true)` and the camera near plane at 0.5.
 
 ## Sources
+- The architect's full set (Daniela Kain, 1:50, sheets א1–א17) is on the owner's Mac in `~/Desktop/phone/112/` – not in this repo.
 - Sheet 4 – entrance floor plan (scale traced from the 1390 cm overall width).
+- Sheet א1 – entrance-level site plan: plot boundary, front wall, gates, paving, lawn and planting, outdoor steps. Scale on the sheet ≈ 1.18 px/cm at a 7000 px render; it lines up with the model within a few cm.
+- Sheet א3 – lower floor plan (same 1390 cm width; its stairwell lines up with the model's stair shaft). Sheet א2 – lower-level site plan.
 - Sheets 8–9 – elevations. Floor ±0.00 = 39.50, walls to +3.35, roof edge +3.85, lower floor −3.30, window heads +2.20 (sill +1.10), large glazing heads +2.80, front door +2.40, garage +2.45.
 - Owner photos and feedback. **Where the owner's description differs from the drawings, the owner wins** – the drawings show the design, the owner knows what was built.
 
@@ -31,7 +34,14 @@ Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root)
 - `buildWalls()` rebuilds all walls; it's called on load and when the wall height, cut, roof or stone image changes. Exterior faces get plaster vs. white using `inside(x,y)` against the `INSIDE` footprint rectangles.
 - Roller shutters: state lives in `shutState` (keyed per opening), animated in the render loop; clicking a window toggles it.
 - Fixed items (floors, kitchen, bathrooms, stairs, railings) are added once to `groups.fixed`; outdoor items to `groups.outdoor`.
-- Room labels: the `rooms` array, `[english, hebrew, x, y, outdoorFlag]`.
+- Room labels: the `rooms` array, `[english, hebrew, x, y, outdoorFlag, heightInMetres?]`.
+- Lower-floor walls use the same `ext()` with `LO` = `{z0:-330, h:330, ins:insideLower}`: `z0` lifts or drops a wall's base, `ins` is the inside test for its faces.
+
+## Site (sheets א1, א3, א8–א9)
+- The plot falls about 3.3 m from the street to the back. `PL` = plot boundary. `inLvl(x,y)` gives the ground inside the plot: the front half at the entrance level (−15), the back and the north-east side at the lower garden (`LOW` = −331). `zOut(y)` is the ground outside the plot: street −45, entrance level, then a slope down to −330 between y = 556 and 1100.
+- Terrain mesh and retaining walls are in group `T` (always shown); paving, railings, steps, gates and planting are in `groups.outdoor`.
+- The deck along the living room and the south terrace are balconies over the lower patio, on 12" steel columns.
+- Planting uses leaf-card crowns (`foliage()`); positions are taken from sheet א1.
 
 ## Decisions confirmed by the owner
 - Stairs go **down** to the lower floor (U-shape, 19 risers, 3.30 m), first flight along the study wall. Oak treads.
@@ -49,4 +59,7 @@ Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root)
 ## Open questions
 - Where the garage's second regular door is.
 - Where the kitchen cooktop is (not visible in the kitchen renders).
-- Lower floor and sloping site are not modelled yet (needs the lower-floor plan).
+- Lower floor: only its outside walls and openings are modelled (no interior rooms). Opening heights are estimates from the elevations.
+- Assumed, not drawn: the balcony column positions (only one is marked on א3), the boundary retaining walls on the slope, and what the walled enclosure at the front-left corner is for.
+- Sheet א1 draws covered parking where the owner says a closed garage was built – the model keeps the garage.
+- Drainage lines and manholes on א1 are not modelled.
