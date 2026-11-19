@@ -5,7 +5,13 @@ Live site: https://talizkmail-ui.github.io/rt/ (GitHub Pages from `main` / root)
 
 ## Files
 - `index.html` – the whole app: HTML, CSS and JS in one file. Two images are embedded as base64 data URIs: the plan underlay (`PLAN_IMG`) and the natural-stone texture (`stoneImg`, cropped from a photo of the real wall).
-- three.js and OrbitControls load from jsDelivr (`three@0.128.0`). Keep versions pinned.
+- three.js and its add-ons (OrbitControls, Sky, EffectComposer + SAOPass and their shaders) load from jsDelivr (`three@0.128.0`). Keep versions pinned.
+
+## Rendering (photo-real look)
+- Linear workflow: `outputEncoding = sRGB`, ACES filmic tone mapping (exposure 0.8). `M()` converts hex colours from sRGB, and every colour texture sets `encoding = sRGBEncoding` – do the same for new materials and textures, or they look washed out.
+- Light: `THREE.Sky` with the sun direction `SUN_DIR`, baked through PMREM into `scene.environment` for reflections and fill light. `ENV` scales how strong that sky light is relative to the sun.
+- Textures are procedural canvases (plaster, porcelain tile, concrete, pavers, grass). `worldUV(material, metres)` maps them in world space, so they keep the same scale on any box size.
+- Post-processing: `composer` = render → SAO ambient occlusion → gamma. The loop calls `composer.render()`, not `renderer.render()`. SAO's depth-texture mode is broken in r128, so keep `SAOPass(scene,camera,false,true)` and the camera near plane at 0.5.
 
 ## Sources
 - Sheet 4 – entrance floor plan (scale traced from the 1390 cm overall width).
